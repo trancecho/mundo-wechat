@@ -2,7 +2,7 @@ package newUser
 
 import (
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"github.com/trancecho/Wechat_OfficialAccount/server"
+	"github.com/trancecho/mundo-wechat/server"
 	"sync"
 )
 

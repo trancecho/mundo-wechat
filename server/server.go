@@ -3,12 +3,12 @@ package server
 import (
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
-	"github.com/hduhelp/wechat-template/config"
 	wechat "github.com/silenceper/wechat/v2"
 	"github.com/silenceper/wechat/v2/cache"
 	"github.com/silenceper/wechat/v2/officialaccount"
 	offConfig "github.com/silenceper/wechat/v2/officialaccount/config"
 	"github.com/sirupsen/logrus"
+	"github.com/trancecho/mundo-wechat/config"
 	"sync"
 )
 

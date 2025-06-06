@@ -2,11 +2,10 @@ package templateMessage
 
 import (
 	"encoding/json"
-	server2 "github.com/hduhelp/wechat-template/server"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"github.com/sirupsen/logrus"
-	"github.com/trancecho/Wechat_OfficialAccount/server"
-	"github.com/trancecho/Wechat_OfficialAccount/utils"
+	"github.com/trancecho/mundo-wechat/server"
+	"github.com/trancecho/mundo-wechat/utils"
 	"strings"
 	"sync"
 )

@@ -2,8 +2,7 @@ package pong
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
-	"github.com/trancecho/Wechat_OfficialAccount/server"
+	"github.com/trancecho/mundo-wechat/server"
 	"sync"
 )
 
@@ -28,7 +27,7 @@ func (p *pong) Init() {}
 func (p *pong) PostInit() {}
 
 func (p *pong) Serve(server *server.Server) {
-	server.HttpEngine.Get("/ping", handlePingPong)
+	server.HttpEngine.GET("/ping", handlePingPong)
 }
 
 func (p *pong) Start(server *server.Server) {}

@@ -3,7 +3,7 @@ package wechatPong
 import (
 	"github.com/getsentry/sentry-go"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"github.com/trancecho/Wechat_OfficialAccount/server"
+	"github.com/trancecho/mundo-wechat/server"
 	"sync"
 )
 
@@ -30,8 +30,7 @@ func (w *wechatPong) PostInit() {}
 func (w *wechatPong) Serve(s *server.Server) {
 	s.MsgEngine.Group("^ping$", func(msg *server.Message) {
 		msg.Reply = &message.Reply{MsgType: message.MsgTypeText, MsgData: message.NewText("pong\n" + "Current version: " + server.Version)}
-	})
-	MsgText("", 1).EventClick("")
+	}).MsgText("", 1).EventClick("")
 	s.MsgEngine.Group("", func(msg *server.Message) {
 		msg.Reply = &message.Reply{
 			MsgType: message.MsgTypeText,
