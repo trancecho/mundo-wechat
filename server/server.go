@@ -1,6 +1,12 @@
 package server
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
+	"log"
+	"sort"
+	"sync"
+
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
 	wechat "github.com/silenceper/wechat/v2"
@@ -9,20 +15,17 @@ import (
 	offConfig "github.com/silenceper/wechat/v2/officialaccount/config"
 	"github.com/sirupsen/logrus"
 	"github.com/trancecho/mundo-wechat/config"
-	"sync"
 )
 
 var Version = "debug"
-
 var Instance *Server
+var logger = logrus.WithField("server", "internal")
 
 type Server struct {
 	HttpEngine   *gin.Engine
 	WechatEngine *officialaccount.OfficialAccount
 	MsgEngine    *MsgEngine
 }
-
-var logger = logrus.WithField("server", "internal")
 
 // Init 快速初始化
 func Init() {
@@ -56,24 +59,8 @@ func Init() {
 	Instance.MsgEngine.Use(wechatMsgLog) // 注册log中间件
 }
 
-// Run 正式开启服务
-func Run() {
-	go func() {
-		logger.Info("http engine starting...")
-		if err := Instance.HttpEngine.Run("127.0.0.1:" + config.GlobalConfig.GetString("httpEngine.port")); err != nil {
-			logger.Fatal(err)
-		} else {
-			logger.Info("http engine running...")
-		}
-	}()
-}
-
 // StartService 启动服务
-// 根据 Module 生命周期 此过程应在Login前调用
-// 请勿重复调用
 func StartService() {
-	//defer sentry.Recover()
-
 	logger.Infof("initializing modules ...")
 	for _, mi := range Modules {
 		mi.Instance.Init()
@@ -84,8 +71,12 @@ func StartService() {
 	logger.Info("all modules initialized")
 
 	logger.Info("register modules serve functions ...")
+	// 微信接入验证接口（GET）
+	Instance.HttpEngine.GET("/serve", WXCheckSignature)
 
-	Instance.HttpEngine.Any("/serve", Instance.MsgEngine.Serve) //处理推送消息以及事件
+	// 微信接入验证：GET 用于验证，POST 用于事件消息
+	Instance.HttpEngine.POST("/serve", Instance.MsgEngine.Serve)
+
 	for _, mi := range Modules {
 		mi.Instance.Serve(Instance)
 	}
@@ -99,8 +90,19 @@ func StartService() {
 	logger.Info("tasks running")
 }
 
+// Run 正式开启服务
+func Run() {
+	go func() {
+		logger.Info("http engine starting...")
+		if err := Instance.HttpEngine.Run("127.0.0.1:" + config.GlobalConfig.GetString("httpEngine.port")); err != nil {
+			logger.Fatal(err)
+		} else {
+			logger.Info("http engine running...")
+		}
+	}()
+}
+
 // Stop 停止所有服务
-// 调用此函数并不会使服务器关闭
 func Stop() {
 	logger.Warn("stopping ...")
 	wg := sync.WaitGroup{}
@@ -111,4 +113,35 @@ func Stop() {
 	wg.Wait()
 	logger.Info("stopped")
 	Modules = make(map[string]ModuleInfo)
+}
+
+// ========== 微信接入验证 ==========
+func WXCheckSignature(c *gin.Context) {
+	signature := c.Query("signature")
+	timestamp := c.Query("timestamp") // 修正变量名
+	nonce := c.Query("nonce")
+	echostr := c.Query("echostr")
+	token := "123456" // 建议从 config 中读取
+
+	log.Printf("收到验证请求: signature=%s, timestamp=%s, nonce=%s, token=%s",
+		signature, timestamp, nonce, token)
+
+	if !CheckSignature(signature, timestamp, nonce, token) {
+		log.Println("签名验证失败")
+		c.AbortWithStatusJSON(400, gin.H{"error": "invalid signature"})
+		return
+	}
+
+	log.Println("签名验证通过，返回 echostr:", echostr)
+	c.String(200, echostr) // 必须原样返回 echostr 字符串
+}
+
+func CheckSignature(signature, timestamp, nonce, token string) bool {
+	strs := []string{token, timestamp, nonce}
+	sort.Strings(strs)
+
+	h := sha1.New()
+	h.Write([]byte(strs[0] + strs[1] + strs[2]))
+
+	return hex.EncodeToString(h.Sum(nil)) == signature
 }
